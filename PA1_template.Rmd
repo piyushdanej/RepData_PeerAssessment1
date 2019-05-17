@@ -1,25 +1,172 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Week 2 Project"
+author: "Piyush Danej"
+date: "15/05/2019"
+output: html_document
 ---
 
+## Reading the data
 
-## Loading and preprocessing the data
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+```
+
+Lets read the data and see at the top 5 rows
+
+```{r}
+activity <- read.csv("activity.csv")
+
+print(head(activity))
+
+```
+
+Now that we've read the data , lets address the tasks .
+
+## Tasks
+
+### Make a histogram of the total number of steps taken each day.
+
+```{r}
+
+sumsteps <- with(activity , tapply(steps , date , sum))
+
+plot( as.Date(as.character(names(sumsteps))) , sumsteps , type = "h" ,
+        xlab = "Date" , ylab= "Total Steps Taken" ,
+         main = "Total Steps taken for each day")
+
+```
+
+### Calculate and report the mean and median of the total number of steps taken per day.
 
 
+```{r}
+meanSteps <-  with(activity , tapply(steps , date , mean , na.rm = TRUE)) 
 
-## What is mean total number of steps taken per day?
+medianSteps <- with(activity , tapply(steps , date , median, na.rm = TRUE))
+
+allSteps <- data.frame(MeanSteps =  meanSteps , MedianSteps = medianSteps)
+
+```
+
+### Mean and Median Steps Each day
+```{r echo = FALSE ,  result = "asis"}
+print(allSteps)
+```
 
 
+### Make a time series plot  of the 5-minute interval and the average number of steps taken, averaged across all days.
 
-## What is the average daily activity pattern?
+```{r}
+averageSteps <- with(activity , tapply(steps , interval , mean , na.rm = TRUE))
+
+plot(names(averageSteps) , averageSteps , type = "l")
+```
 
 
+### Interval with Max Average Steps
 
-## Imputing missing values
+```{r}
+maxSteps <- max(averageSteps)
+
+maxInterval <- names(averageSteps[match(maxSteps , averageSteps)])
+
+```
+
+#### The interval with maximum steps throughout all days is `r maxInterval` .
+
+### Calculate the total number of NAs in the data set
+
+```{r}
+nas <- is.na(activity$steps)
+nacount <- nrow(activity[nas , ])
+```
+
+#### Total number of NA in the dataset is `r nacount`
+
+### Impute the missing values in dataset (NA)
+
+```{r}
+
+alldates <- unique(as.character(activity$date))
+
+activity2 <- data.frame(steps = c(), date = c(), interval= c())
+
+for(d in alldates){
+    m <- activity[activity$date == d , 1] %>% mean(na.rm = T)
+    logicV <- is.na(activity[activity$date == d , 1])
+    if(is.na(m) || is.nan(m))
+        activity[activity$date ==d , 1][logicV] <- 0
+    else
+        activity[activity$date ==d , 1][logicV] <- m
+    
+    activity2 <- rbind(activity2 , activity[activity$date ==d , ])
+    }
+navals <- activity2[is.na(activity2)]
+
+```
+#### Number of NA values in activity 2 : `r navals`
+
+### Make a plot of total steps taken in a day
+
+```{r}
+sumsteps2 <- with(activity2 , tapply(steps , date , sum))
+
+plot( names(sumsteps2) %>% as.character() %>% as.Date() ,
+        sumsteps , 
+        type = "h" ,
+        ylab = "Dates" , 
+        xlab = "Total Steps" ,
+        main = "Total Steps taken for each day" )
 
 
+```
 
-## Are there differences in activity patterns between weekdays and weekends?
+### Mean and median of toal steps in new dataframe
+
+```{r}
+meanSteps2 <-  with(activity2 , tapply(steps , date , mean  )) 
+
+medianSteps2 <- with(activity2, tapply(steps , date , median))
+
+allSteps2 <- data.frame(MeanSteps =  meanSteps2 , MedianSteps = medianSteps2)
+
+```
+
+### Difference in Old mean and new Mean
+
+``` {r}
+plot( names(sumsteps) %>% as.character() %>% as.Date(), meanSteps2 , type="p" , pch = 1 , col = "red")
+points(names(sumsteps) %>% as.character() %>% as.Date() , meanSteps , type ="p" , pch = 20, col = "blue")
+legend( "topright",legend = c("Original Mean Steps" , "Imputed Mean steps") , col = c("red" , "blue") , pch = c(1 , 20) , )
+
+```
+
+#### As we can see in the plot , the old NA Values are now 0 which are depicted by red circles without fill.
+
+### Weekday Weekend
+```{r}
+days <- weekdays(as.Date(as.character(activity2$date)))
+newdays <-lapply(days , function(x){
+            if(x %in% c("Monday" , "Tuesday" , "Wenesday" , "Thursday"))
+                "Weekday"
+            else
+                "Weekend"
+        }) %>% unlist()
+
+activity2$days <- as.factor(newdays)
+
+head(activity2)
+```
+
+### Panel plot based on Weekday / Weekend
+
+```{r}
+avg <- with(subset(activity2 , activity2$days == "Weekday") , tapply(steps , interval, mean))
+avg2 <- with(subset(activity2 , activity2$days == "Weekend") , tapply(steps , interval, mean))
+
+plot(names(avg) , avg , type="l" , lwd = 1 , col = "blue")
+plot(names(avg2) , avg2 , type = "l"  , lwd = 1 , col = "red")
+
+```
