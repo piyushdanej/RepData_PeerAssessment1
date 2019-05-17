@@ -2,7 +2,9 @@
 title: "Week 2 Project"
 author: "Piyush Danej"
 date: "15/05/2019"
-output: html_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ## Reading the data
@@ -166,7 +168,7 @@ head(activity2)
 avg <- with(subset(activity2 , activity2$days == "Weekday") , tapply(steps , interval, mean))
 avg2 <- with(subset(activity2 , activity2$days == "Weekend") , tapply(steps , interval, mean))
 
-plot(names(avg) , avg , type="l" , lwd = 1 , col = "blue")
-plot(names(avg2) , avg2 , type = "l"  , lwd = 1 , col = "red")
+plot(names(avg) , avg , type="l" , lwd = 1 , col = "blue" , main = "Weekday Averages")
+plot(names(avg2) , avg2 , type = "l"  , lwd = 1 , col = "red" , main = "Weekend Averages")
 
 ```
